@@ -1,0 +1,59 @@
+---
+# ansible/playbooks/configure.yml
+
+- name: "Configure Homelab"
+  hosts: "all"
+
+  var_files:
+    - "../manifest.yml"
+
+  tasks:
+
+    - name: "Configure hostname"
+      ansible.builtin.hostname:
+        name: "{{ system.hostname }}"
+      become: true
+
+    - name: "Configure timezone"
+      community.general.timezone:
+        name: "{{ system.timezone }}"
+      become: true
+
+    - name: "Manage chrony Packages"
+      ansible.builtin.package:
+        name: "chrony"
+        state: "present"
+      become: true
+
+    - name: "Manage chrony Services"
+      ansible.builtin.service:
+        name: "chronyd.service"
+        state: "started"
+        enabled: true
+      become: true
+
+    - name: "Manage cli Packages"
+      ansible.builtin.package:
+        name:
+          - "bash"
+          - "bash-completion"
+          - "tmux"
+          - "wget"
+          - "curl"
+        state: "present"
+      become: true
+
+    - name: "Manage tuned Packages"
+      ansible.builtin.package:
+        name: "tuned"
+        state: "present"
+      become: true
+
+    - name: "Manage tuned Service"
+      ansbile.builtin.service:
+        name: "tuned.service"
+        state: "started"
+        enabled: true
+      become: true
+
+  ...

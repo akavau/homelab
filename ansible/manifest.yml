@@ -1,0 +1,6 @@
+---
+# ansible/manifest.yaml
+
+system:
+  hostname: "home.local"
+  timezone: "Etc/UTC"
