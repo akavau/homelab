@@ -4,7 +4,7 @@
 - name: "Configure Homelab"
   hosts: "all"
 
-  var_files:
+  vars_files:
     - "../manifest.yml"
 
   tasks:
@@ -50,10 +50,72 @@
       become: true
 
     - name: "Manage tuned Service"
-      ansbile.builtin.service:
+      ansible.builtin.service:
         name: "tuned.service"
         state: "started"
         enabled: true
       become: true
 
+    - name: "Manage Avahi Package"
+      ansible.builtin.package:
+        name:
+          - "avahi"
+          - "nss-mdns"
+        state: "present"
+      become: true
+
+    - name: "Manage avahi Services"
+      ansible.builtin.service:
+        name: "avahi-daemon.service"
+        state: "started"
+        enabled: true
+      become: true
+
+    - name: "Manage avahi Firewall Policy"
+      ansible.posix.firewalld:
+        service: "mdns"
+        state: "enabled"
+        permanent: true
+        immediate: true
+      become: true
+
+    - name: "Manage Cockpit Package"
+      ansible.builtin.package:
+        name:
+          - "cockpit"
+          - "cockpit-selinux"
+          - "cockpit-sosreport"
+        state: "present"
+      become: true
+
+    - name: "Manage Cockpit Services"
+      ansible.builtin.service:
+        name: "cockpit.socket"
+        state: "started"
+      become: true
+
+    - name: "Manage cockpit firewall policy"
+      ansible.posix.firewalld:
+        service: "cockpit"
+        state: "enabled"
+        immediate: true
+        permanent: true
+      become: true
+
+    - name: "Manage pcp Package"
+      ansible.builtin.package:
+        name:
+          - "pcp"
+          - "cockpit-pcp"
+        state: "present"
+      become: true
+
+    - name: "Manage pcp Service"
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: "started"
+      become: true
+      loop:
+        - "pmcd.service"
+        - "pmlogger.service"
 ...

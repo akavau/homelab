@@ -2,7 +2,7 @@
 # ansible/manifest.yaml
 
 system:
-  hostname: "home.local"
-  timezone: "Etc/UTC"
+  hostname: "fedora.local"
+  timezone: "Europe/Berlin"
 
 ...
