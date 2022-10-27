@@ -1,7 +1,27 @@
 # Homelab
-In this project I will document the setup of my homeserver which will be used for several data engineering projects.
+
+## Motivation
+Why am I doing what I'm doing.
+
+## Concept
 
 ## ansible
+
+## cockpit
+
+## avahi
+
+## virtualization
+
+## podman
+
+## zerotier
+
+## Todo
+- Automate virtualization
+- Automate Pods
+- Setup backup
+- Setup ZeroTier
 
 Execute command
 	# Execute playbook
