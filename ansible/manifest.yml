@@ -2,7 +2,7 @@
 # ansible/manifest.yaml
 
 system:
-  hostname: "homelab.local"
+  hostname: "homelab"
   timezone: "Europe/Berlin"
 
 ...

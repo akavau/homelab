@@ -1,19 +1,39 @@
 ---
 # ansible/playbooks/configure.yml
 
-- name: "Configure Homelab"
+- name: "Configure Fedora Homeserver"
   hosts: "all"
 
   vars_files:
     - "../manifest.yml"
 
+  handlers:
+
+    - name: "Restart Cockpit Socket"
+      ansible.builtin.service:
+        name: "cockpit.socket"
+        state: "restarted"
+      become: true
+      tags:
+        - "cockpit"
+        - "kvm"
+
+    - name: "Restart system"
+      ansible.builtin.reboot:
+        reboot_timeout: "60"
+      become: true
+      tags:
+        - "network"
+
   tasks:
 
+    # Hostname
     - name: "Configure hostname"
       ansible.builtin.hostname:
         name: "{{ system.hostname }}"
       become: true
 
+    # Time
     - name: "Configure timezone"
       community.general.timezone:
         name: "{{ system.timezone }}"
@@ -32,17 +52,50 @@
         enabled: true
       become: true
 
+    # Core Packages
     - name: "Manage cli Packages"
       ansible.builtin.package:
         name:
           - "bash"
           - "bash-completion"
+          - "curl"
           - "tmux"
           - "wget"
-          - "curl"
+          - "vim"
         state: "present"
       become: true
 
+    # SELinux
+    - name: "Manage SELinux Packages"
+      ansible.builtin.package:
+        name:
+          - "libselinux"
+          - "libselinux-utils"
+          - "setroubleshoot-server"
+        state: "present"
+      become: true
+
+    - name: "Manage SELinux Configuration"
+      ansible.posix.selinux:
+        policy: "targeted"
+        state: "enforcing"
+      become: true
+
+    # Firewall
+    - name: "Manage firewalld Packages"
+      ansible.builtin.package:
+        name: "firewalld"
+        state: "present"
+      become: true
+
+    - name: "Manage firewalld Services"
+      ansible.builtin.service:
+        name: "firewalld.service"
+        state: "started"
+        enabled: true
+      become: true
+
+    # Tuned / Power Saving
     - name: "Manage tuned Packages"
       ansible.builtin.package:
         name: "tuned"
@@ -56,7 +109,8 @@
         enabled: true
       become: true
 
-    - name: "Manage Avahi Package"
+    # Avahi
+    - name: "Manage avahi Packages"
       ansible.builtin.package:
         name:
           - "avahi"
@@ -79,22 +133,24 @@
         immediate: true
       become: true
 
-    - name: "Manage Cockpit Package"
+    # Cockpit
+    - name: "Manage cockpit Packages"
       ansible.builtin.package:
         name:
           - "cockpit"
           - "cockpit-selinux"
           - "cockpit-sosreport"
+          - "cockpit-storaged"
         state: "present"
       become: true
 
-    - name: "Manage Cockpit Services"
+    - name: "Manage cockpit Services"
       ansible.builtin.service:
         name: "cockpit.socket"
         state: "started"
       become: true
 
-    - name: "Manage cockpit firewall policy"
+    - name: "Manage cockpit Firewall Policy"
       ansible.posix.firewalld:
         service: "cockpit"
         state: "enabled"
@@ -102,7 +158,8 @@
         permanent: true
       become: true
 
-    - name: "Manage pcp Package"
+    # PCP
+    - name: "Manage pcp Packages"
       ansible.builtin.package:
         name:
           - "pcp"
@@ -110,7 +167,7 @@
         state: "present"
       become: true
 
-    - name: "Manage pcp Service"
+    - name: "Manage pcp Services"
       ansible.builtin.service:
         name: "{{ item }}"
         state: "started"
@@ -118,4 +175,82 @@
       loop:
         - "pmcd.service"
         - "pmlogger.service"
+
+    # Virtualization
+    - name: "Manage Virtualization Packages"
+      ansible.builtin.package:
+        name:
+          - "libvirt"
+          - "libvirt-client"
+          - "libvirt-daemon-config-network"
+          - "qemu-kvm"
+          - "genisoimage"
+        state: "present"
+      become: true
+      tags:
+        - "kvm"
+
+    - name: "Manage Virtualization Services"
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: "started"
+        enabled: true
+      become: true
+      loop:
+        - "virtqemud.service"
+        - "virtnetworkd.service"
+      tags:
+        - "kvm"
+
+    - name: "Manage cockpit Machines Packages"
+      ansible.builtin.package:
+        name: "cockpit-machines"
+        state: "present"
+      become: true
+      notify:
+        - "Restart cockpit Service"
+      tags:
+        - "cockpit"
+        - "kvm"
+
+    # Containers with Podman
+    - name: "Manage podman Packages"
+      ansible.builtin.package:
+        name:
+          - "podman"
+        state: "present"
+      become: true
+
+    - name: "Manage cockpit-podman Packages"
+      ansible.builtin.package:
+        name:
+          - "cockpit-podman"
+        state: "present"
+      become: true
+
+    - name: "Manage podman SELinux Booleans"
+      ansible.posix.seboolean:
+        name: "container_connect_any"
+        state: true
+        persistent: true
+      become: true
+
+    - name: "Manage podman Socket"
+      ansible.builtin.service:
+        name: "podman.socket"
+        state: "started"
+        enabled: true
+      become: true
+      loop:
+        - "podman.socket"
+
+    - name: "Manage podman Timers"
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: "started"
+        enabled: true
+      become: true
+      loop:
+        - "podman-auto-update.service"
+        - "podman-auto-update.timer"          
 ...
